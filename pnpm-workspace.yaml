@@ -1,0 +1,8 @@
+onlyBuiltDependencies:
+  - '@firebase/util'
+  - core-js
+  - esbuild
+  - protobufjs
+
+overrides:
+  fcm-client: link:../../../Library/pnpm/global/5/node_modules/fcm-client
