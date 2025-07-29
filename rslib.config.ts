@@ -4,7 +4,7 @@ import { pluginUnpluginVue } from 'rsbuild-plugin-unplugin-vue';
 export default defineConfig({
   lib: [
     {
-      bundle: false,
+      bundle: true,
       format: 'esm',
     },
   ],
@@ -12,4 +12,12 @@ export default defineConfig({
     target: 'web',
   },
   plugins: [pluginUnpluginVue()],
+  // Externalize Vue để tránh duplicate instances
+  tools: {
+    bundlerChain: (chain) => {
+      chain.externals({
+        vue: 'vue',
+      });
+    },
+  },
 });

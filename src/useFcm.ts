@@ -1,6 +1,6 @@
 // src/composables/useFcm.ts
 import { messaging, getToken, onMessage } from './firebase';
-import { ref, watch } from 'vue';
+import { reactive, watch } from 'vue';
 
 export interface FcmNotificationPayload {
   from: string;
@@ -12,10 +12,23 @@ export interface FcmNotificationPayload {
   };
 }
 
+// Shared state để đảm bảo app bên ngoài có thể watch được
+let sharedState: { notifications: FcmNotificationPayload[] } | null = null;
+
 export const useFcm = () => {
-  const listNotification = ref<FcmNotificationPayload[]>([]);
+  // Sử dụng shared state nếu đã tồn tại, nếu không tạo mới
+  if (!sharedState) {
+    sharedState = reactive({
+      notifications: [] as FcmNotificationPayload[]
+    });
+  }
+
+  watch(sharedState, (newVal) => {
+    console.log('sharedState changed:', newVal);
+  }, { immediate: true, deep: true });
+
   const vapidKey =
-    'BAnMUfFvWEf8QHCBIyHisHmMKp5PURUnn-6tFlM-5uJVZwjcRCnWkYRJuX8fL44imIRMFu3iFWwifc8jdcfAJ0U'; // từ Firebase Console > Project Settings > Cloud Messaging
+    'BAnMUfFvWEf8QHCBIyHisHmMKp5PURUnn-6tFlM-5uJVZwjcRCnWkYRJuX8fL44imIRMFu3iFWwifc8jdcfAJ0U';
 
   const requestPermissionAndGetToken = async () => {
     try {
@@ -35,29 +48,28 @@ export const useFcm = () => {
 
   const listenToForegroundMessages = () => {
     onMessage(messaging, (payload) => {
-      // console.log('Message received.', payload)
-      listNotification.value = [...listNotification.value, payload];
-      // Hiển thị thông báo hoặc xử lý tại clientss
+      // Đảm bảo payload được wrap đúng cách
+      const notification = reactive({
+        from: payload.from,
+        messageId: payload.messageId,
+        notification: payload.notification ? reactive(payload.notification) : undefined,
+        collapseKey: payload.collapseKey,
+      });
+
+      console.log('notification:', notification);
+
+      sharedState!.notifications.push(notification);
     });
   };
 
   const getListNotification = () => {
-    return listNotification;
+    return sharedState!.notifications;
   };
-
-  watch(
-    listNotification,
-    (listNotification) => {
-      console.log('[LIB] ref:', listNotification);
-      console.log('[LIB] Vue ref:', ref);
-    },
-    { immediate: true, deep: true },
-  );
 
   return {
     requestPermissionAndGetToken,
     listenToForegroundMessages,
-    listNotification,
+    listNotification: sharedState!.notifications,
     getListNotification,
   };
 };
