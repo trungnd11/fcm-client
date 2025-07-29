@@ -1,6 +1,6 @@
 // src/composables/useFcm.ts
 import { messaging, getToken, onMessage } from './firebase';
-import { reactive, watch } from 'vue';
+import { reactive } from 'vue';
 
 export interface FcmNotificationPayload {
   from: string;
@@ -12,21 +12,9 @@ export interface FcmNotificationPayload {
   };
 }
 
-// Shared state để đảm bảo app bên ngoài có thể watch được
-let sharedState: { notifications: FcmNotificationPayload[] } | null = null;
+const listNotification = reactive<FcmNotificationPayload[]>([]);
 
 export const useFcm = () => {
-  // Sử dụng shared state nếu đã tồn tại, nếu không tạo mới
-  if (!sharedState) {
-    sharedState = reactive({
-      notifications: [] as FcmNotificationPayload[]
-    });
-  }
-
-  watch(sharedState, (newVal) => {
-    console.log('sharedState changed:', newVal);
-  }, { immediate: true, deep: true });
-
   const vapidKey =
     'BAnMUfFvWEf8QHCBIyHisHmMKp5PURUnn-6tFlM-5uJVZwjcRCnWkYRJuX8fL44imIRMFu3iFWwifc8jdcfAJ0U';
 
@@ -48,28 +36,60 @@ export const useFcm = () => {
 
   const listenToForegroundMessages = () => {
     onMessage(messaging, (payload) => {
-      // Đảm bảo payload được wrap đúng cách
-      const notification = reactive({
-        from: payload.from,
-        messageId: payload.messageId,
-        notification: payload.notification ? reactive(payload.notification) : undefined,
-        collapseKey: payload.collapseKey,
-      });
-
-      console.log('notification:', notification);
-
-      sharedState!.notifications.push(notification);
+      listNotification.push(payload);
+      // Emit custom event
+      window.dispatchEvent(new CustomEvent('fcm-notification', { 
+        detail: payload 
+      }));
     });
   };
 
-  const getListNotification = () => {
-    return sharedState!.notifications;
+  // Lắng nghe background messages từ service worker qua BroadcastChannel
+  const listenToBackgroundMessages = () => {
+    if ('BroadcastChannel' in window) {
+      const channel = new BroadcastChannel('fcm-notifications');
+      
+      channel.onmessage = (event) => {
+        if (event.data && event.data.type === 'FCM_BACKGROUND_NOTIFICATION') {
+          const notification = event.data.payload;
+          // Kiểm tra xem notification đã có trong list chưa
+          const exists = listNotification.find(n => n.messageId === notification.messageId);
+          if (!exists) {
+            listNotification.push(notification);
+            console.log('Received background notification via BroadcastChannel:', notification);
+          }
+        }
+      };
+    } else {
+      // Fallback: sử dụng service worker message
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.addEventListener('message', (event) => {
+          if (event.data && event.data.type === 'FCM_BACKGROUND_NOTIFICATION') {
+            const notification = event.data.payload;
+            const exists = listNotification.find(n => n.messageId === notification.messageId);
+            if (!exists) {
+              listNotification.push(notification);
+              console.log('Received background notification via postMessage:', notification);
+            }
+          }
+        });
+      }
+    }
+  };
+
+  // Khởi tạo tất cả listeners
+  const initializeFCM = () => {
+    // Lắng nghe foreground messages
+    listenToForegroundMessages();
+    
+    // Lắng nghe background messages
+    listenToBackgroundMessages();
   };
 
   return {
     requestPermissionAndGetToken,
     listenToForegroundMessages,
-    listNotification: sharedState!.notifications,
-    getListNotification,
+    initializeFCM,
+    listNotification,
   };
 };

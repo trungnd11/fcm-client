@@ -2,6 +2,14 @@
   "name": "fcm-rslib",
   "version": "1.0.0",
   "type": "module",
+  "bin": {
+    "fcm-rslib": "./scripts/cli.js"
+  },
+  "files": [
+    "dist",
+    "public",
+    "scripts"
+  ],
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
@@ -9,18 +17,21 @@
     }
   },
   "types": "./dist/index.d.ts",
-  "files": [
-    "dist"
-  ],
+
   "scripts": {
-    "build": "rslib build && vue-tsc",
+    "build": "rslib build",
     "build:storybook": "storybook build",
     "check": "biome check --write",
-    "dev": "rslib build --watch",
+    "dev": "rslib dev",
     "format": "prettier --write .",
     "lint": "eslint .",
     "storybook": "storybook dev",
-    "test": "vitest run"
+    "test": "vitest run",
+    "fcm:generate": "node scripts/fcm-worker.js generate",
+    "fcm:validate": "node scripts/fcm-worker.js validate",
+    "fcm:config": "node scripts/fcm-worker.js update-config",
+    "fcm:init": "node scripts/cli.js init-worker",
+    "fcm:setup": "node scripts/setup-cli.js"
   },
   "devDependencies": {
     "@biomejs/biome": "2.0.6",
@@ -56,8 +67,6 @@
   },
   "private": true,
   "dependencies": {
-    "@ant-design/icons-vue": "^7.0.1",
-    "ant-design-vue": "^4.2.6",
     "firebase": "^12.0.0"
   }
 }
