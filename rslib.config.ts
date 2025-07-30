@@ -12,7 +12,6 @@ export default defineConfig({
     target: 'web',
   },
   plugins: [pluginUnpluginVue()],
-  // Externalize Vue để tránh duplicate instances
   tools: {
     bundlerChain: (chain) => {
       chain.externals({

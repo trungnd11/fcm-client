@@ -1,4 +1,6 @@
-import Button from './Button.vue';
-import { useFcm } from './useFcm.js';
+import 'ant-design-vue/dist/reset.css';
+import './style.css';
+import { useNotification } from './useNotification.js';
+import Notification from './components/notification/Notification.vue';
 
-export { useFcm, Button };
+export { useNotification, Notification };
