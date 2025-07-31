@@ -1,4 +1,3 @@
-// src/firebase.ts
 import { initializeApp } from 'firebase/app';
 import { getMessaging, getToken, onMessage } from 'firebase/messaging';
 
@@ -12,10 +11,8 @@ const firebaseConfig = {
   measurementId: 'G-43J14KHN0W',
 };
 
-// Khởi tạo Firebase
 const app = initializeApp(firebaseConfig);
 
-// Lấy messaging instance
 const messaging = getMessaging(app);
 
 export { messaging, getToken, onMessage };

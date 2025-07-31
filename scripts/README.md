@@ -133,7 +133,7 @@ Service worker được tạo tại: `./public/firebase-messaging-sw.js`
 Script validate kiểm tra các thành phần cần thiết:
 
 - ✅ Firebase App Import
-- ✅ Firebase Messaging Import  
+- ✅ Firebase Messaging Import
 - ✅ Firebase Initialize
 - ✅ Messaging Instance
 - ✅ Background Message Handler
@@ -164,6 +164,6 @@ Thêm vào pipeline build:
 - name: Generate FCM Service Worker
   run: npm run fcm:generate
 
-- name: Validate FCM Service Worker  
+- name: Validate FCM Service Worker
   run: npm run fcm:validate
-``` 
+```

@@ -1,5 +1,8 @@
-import { messaging, getToken, onMessage } from './firebase';
+import { messaging, getToken, onMessage } from '../firebase';
 import { reactive, watch, ref } from 'vue';
+
+const vapidKey =
+  'BAnMUfFvWEf8QHCBIyHisHmMKp5PURUnn-6tFlM-5uJVZwjcRCnWkYRJuX8fL44imIRMFu3iFWwifc8jdcfAJ0U';
 
 export interface FcmNotificationPayload {
   from: string;
@@ -19,27 +22,19 @@ function getFromLocalStorage() {
   return JSON.parse(notifications);
 }
 
-function getCountReadAllNotification() {
-  const count = localStorage.getItem('countReadAllNotification');
-  if (!count) return 0;
-  return parseInt(count);
-}
-
 const listNotification = reactive<FcmNotificationPayload[]>(
   getFromLocalStorage() ?? [],
 );
-const countReadAllNotification = ref(getCountReadAllNotification() ?? 0);
+// Tính toán count dựa trên số notification chưa đọc thực tế
+const countReadAllNotification = ref(0);
 
 export const useNotification = () => {
-  const vapidKey =
-    'BAnMUfFvWEf8QHCBIyHisHmMKp5PURUnn-6tFlM-5uJVZwjcRCnWkYRJuX8fL44imIRMFu3iFWwifc8jdcfAJ0U';
-
   const requestPermissionAndGetToken = async () => {
+    console.log("start request permission and get token...");
     try {
       const token = await getToken(messaging, { vapidKey });
       if (token) {
         console.log('FCM Token:', token);
-        // Gửi token lên server của bạn để push về sau
       } else {
         console.warn(
           'No registration token available. Request permission to generate one.',
@@ -52,13 +47,18 @@ export const useNotification = () => {
 
   const listenToForegroundMessages = () => {
     onMessage(messaging, (payload) => {
-      listNotification.push({ ...payload, isRead: false, createdAt: new Date().toISOString() });
+      listNotification.push({
+        ...payload,
+        isRead: false,
+        createdAt: new Date().toISOString(),
+      });
       // Emit custom event
       window.dispatchEvent(
         new CustomEvent('fcm-notification', {
           detail: payload,
         }),
       );
+      increaseCountReadAllNotification();
     });
   };
 
@@ -75,11 +75,16 @@ export const useNotification = () => {
             (n) => n.messageId === notification.messageId,
           );
           if (!exists) {
-            listNotification.push({ ...notification, isRead: false, createdAt: new Date().toISOString() });
-              console.log(
-                'Received background notification via BroadcastChannel:',
-                notification,
+            listNotification.push({
+              ...notification,
+              isRead: false,
+              createdAt: new Date().toISOString(),
+            });
+            console.log(
+              'Received background notification via BroadcastChannel:',
+              notification,
             );
+            increaseCountReadAllNotification();
           }
         }
       };
@@ -98,6 +103,7 @@ export const useNotification = () => {
                 'Received background notification via postMessage:',
                 notification,
               );
+              increaseCountReadAllNotification();
             }
           }
         });
@@ -112,16 +118,16 @@ export const useNotification = () => {
 
   watch(listNotification, (listNotification) => {
     saveToLocalStorage(listNotification);
-    countReadAllNotification.value = countReadAllNotification.value + 1;
-    saveCountReadAllNotification();
   });
 
   function readNotification(messageId: string) {
     const notification = listNotification.find(
       (n) => n.messageId === messageId,
     );
-    if (notification) {
+    if (notification && !notification.isRead) {
       notification.isRead = true;
+      // Không giảm count khi đọc notification vì count đã được reset khi click chuông
+      console.log('Read notification:', messageId, 'Count remains:', countReadAllNotification.value);
     }
   }
 
@@ -130,7 +136,10 @@ export const useNotification = () => {
   }
 
   function saveCountReadAllNotification() {
-    localStorage.setItem('countReadAllNotification', countReadAllNotification.value.toString());
+    localStorage.setItem(
+      'countReadAllNotification',
+      countReadAllNotification.value.toString(),
+    );
   }
 
   function resetCountReadAllNotification() {
@@ -139,11 +148,25 @@ export const useNotification = () => {
   }
 
   function removeNotification(messageId: string) {
-    listNotification.splice(listNotification.findIndex(n => n.messageId === messageId), 1);
+    const notificationIndex = listNotification.findIndex((n) => n.messageId === messageId);
+    if (notificationIndex !== -1) {
+      listNotification.splice(notificationIndex, 1);
+      // Không giảm count khi xóa notification vì count đã được reset khi click chuông
+    }
   }
 
   function clearAllNotification() {
+    countReadAllNotification.value = 0;
+    saveCountReadAllNotification();
     listNotification.splice(0, listNotification.length);
+  }
+
+
+
+  function increaseCountReadAllNotification() {
+    // Chỉ tăng count khi có notification mới
+    countReadAllNotification.value = countReadAllNotification.value + 1;
+    saveCountReadAllNotification();
   }
 
   return {

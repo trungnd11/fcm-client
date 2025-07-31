@@ -34,15 +34,15 @@ For more information, visit: https://github.com/your-repo/fcm-rslib
 
 function runWorkerScript(command, args = []) {
   const workerScript = join(__dirname, 'fcm-worker.js');
-  
+
   return new Promise((resolve, reject) => {
     const child = spawn('node', [workerScript, command, ...args], {
       stdio: 'inherit',
       cwd: process.cwd(),
       env: {
         ...process.env,
-        FCM_RSLIB_INSTALLED: 'true'
-      }
+        FCM_RSLIB_INSTALLED: 'true',
+      },
     });
 
     child.on('close', (code) => {
@@ -61,25 +61,29 @@ function runWorkerScript(command, args = []) {
 
 async function initWorker() {
   console.log('🚀 Initializing FCM Service Worker...\n');
-  
+
   try {
     // Generate service worker
     console.log('📝 Generating service worker...');
     await runWorkerScript('generate');
-    
+
     // Validate the generated service worker
     console.log('\n🔍 Validating service worker...');
     await runWorkerScript('validate');
-    
+
     console.log('\n✅ FCM Service Worker initialized successfully!');
-    console.log('📁 Service worker location: ./public/firebase-messaging-sw.js');
+    console.log(
+      '📁 Service worker location: ./public/firebase-messaging-sw.js',
+    );
     console.log('\n📖 Next steps:');
     console.log('   1. Register the service worker in your app');
     console.log('   2. Request notification permission');
     console.log('   3. Get FCM token and send to your server');
-    
   } catch (error) {
-    console.error('\n❌ Failed to initialize FCM Service Worker:', error.message);
+    console.error(
+      '\n❌ Failed to initialize FCM Service Worker:',
+      error.message,
+    );
     process.exit(1);
   }
 }
@@ -88,7 +92,12 @@ async function main() {
   const args = process.argv.slice(2);
   const command = args[0];
 
-  if (!command || command === 'help' || command === '--help' || command === '-h') {
+  if (
+    !command ||
+    command === 'help' ||
+    command === '--help' ||
+    command === '-h'
+  ) {
     showHelp();
     return;
   }
@@ -98,13 +107,13 @@ async function main() {
       case 'init-worker':
         await initWorker();
         break;
-        
+
       case 'generate':
       case 'validate':
       case 'config':
         await runWorkerScript(command, args.slice(1));
         break;
-        
+
       default:
         console.error(`❌ Unknown command: ${command}`);
         console.log('\nRun "fcm-rslib help" for available commands.');
@@ -117,6 +126,11 @@ async function main() {
 }
 
 // Run if this file is executed directly
-if (import.meta.url === `file://${process.argv[1]}`) {
+// Cross-platform check for direct execution
+const isDirectExecution = import.meta.url === `file://${process.argv[1].replace(/\\/g, '/')}` || 
+                         import.meta.url === `file:///${process.argv[1].replace(/\\/g, '/')}` ||
+                         process.argv[1].includes('cli.js');
+
+if (isDirectExecution) {
   main();
-} 
+}

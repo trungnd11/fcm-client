@@ -21,7 +21,7 @@ interface Props {
 }
 
 withDefaults(defineProps<Props>(), {
-  size: 24
+  size: 24,
 });
 </script>
 
@@ -34,4 +34,4 @@ withDefaults(defineProps<Props>(), {
 .bell-icon:hover {
   color: #1890ff;
 }
-</style> 
+</style>

@@ -31,6 +31,7 @@ pnpm run fcm:init
 ```
 
 This will automatically:
+
 - ✅ Generate Firebase service worker
 - ✅ Copy to `./public/firebase-messaging-sw.js`
 - ✅ Validate the generated service worker
@@ -40,22 +41,17 @@ This will automatically:
 
 ```vue
 <script setup>
-import { useFcm } from 'fcm-rslib'
+import { useFcm } from 'fcm-rslib';
 
-const { 
-  token, 
-  permission, 
-  requestPermission, 
-  onMessage 
-} = useFcm()
+const { token, permission, requestPermission, onMessage } = useFcm();
 
 // Request notification permission
-await requestPermission()
+await requestPermission();
 
 // Listen to foreground messages
 onMessage((payload) => {
-  console.log('Received message:', payload)
-})
+  console.log('Received message:', payload);
+});
 </script>
 ```
 
