@@ -41,7 +41,7 @@ This will automatically:
 
 ```vue
 <script setup>
-import { useFcm } from 'fcm-rslib';
+import { useFcm } from "fcm-rslib";
 
 const { token, permission, requestPermission, onMessage } = useFcm();
 
@@ -50,7 +50,7 @@ await requestPermission();
 
 // Listen to foreground messages
 onMessage((payload) => {
-  console.log('Received message:', payload);
+  console.log("Received message:", payload);
 });
 </script>
 ```

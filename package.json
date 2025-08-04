@@ -1,9 +1,9 @@
 {
-  "name": "fcm-rslib",
+  "name": "f-notification",
   "version": "1.0.0",
   "type": "module",
   "bin": {
-    "fcm-rslib": "./scripts/cli.js"
+    "f-notification": "./scripts/cli.js"
   },
   "files": [
     "dist",

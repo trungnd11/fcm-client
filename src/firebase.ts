@@ -1,18 +1,30 @@
-import { initializeApp } from 'firebase/app';
-import { getMessaging, getToken, onMessage } from 'firebase/messaging';
+import { initializeApp, FirebaseApp } from "firebase/app";
+import {
+  getMessaging,
+  getToken,
+  onMessage,
+  Messaging,
+} from "firebase/messaging";
+import { getConfig } from "./config";
 
-const firebaseConfig = {
-  apiKey: 'AIzaSyANUdxcxppINSZkayH4nGn4t-lOTg3B7N4',
-  authDomain: 'my-landing-page-e7c7e.firebaseapp.com',
-  projectId: 'my-landing-page-e7c7e',
-  storageBucket: 'my-landing-page-e7c7e.firebasestorage.app',
-  messagingSenderId: '999813447171',
-  appId: '1:999813447171:web:4d47bb99b3fa66909a9836',
-  measurementId: 'G-43J14KHN0W',
+let app: FirebaseApp | undefined;
+let messaging: Messaging | undefined;
+
+export const initializeFirebase = () => {
+  const config = getConfig();
+
+  if (!app) {
+    app = initializeApp(config.firebase);
+  }
+
+  if (!messaging) {
+    messaging = getMessaging(app);
+  }
+
+  return { app, messaging };
 };
 
-const app = initializeApp(firebaseConfig);
+// Initialize Firebase when importing
+const { messaging: defaultMessaging } = initializeFirebase();
 
-const messaging = getMessaging(app);
-
-export { messaging, getToken, onMessage };
+export { defaultMessaging as messaging, getToken, onMessage };

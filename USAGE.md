@@ -13,7 +13,7 @@ pnpm add fcm-rslib
 ### 1. Import CSS
 
 ```javascript
-import 'fcm-rslib/dist/index.css';
+import "fcm-rslib/dist/index.css";
 ```
 
 ### 2. Cách sử dụng với Ant Design Vue
@@ -21,13 +21,13 @@ import 'fcm-rslib/dist/index.css';
 #### Option A: Sử dụng Plugin (Khuyến nghị)
 
 ```javascript
-import { createApp } from 'vue';
-import { FcmPlugin } from 'fcm-rslib';
-import App from './App.vue';
+import { createApp } from "vue";
+import { FcmPlugin } from "fcm-rslib";
+import App from "./App.vue";
 
 const app = createApp(App);
 app.use(FcmPlugin);
-app.mount('#app');
+app.mount("#app");
 ```
 
 #### Option B: Sử dụng Provider Component
@@ -40,7 +40,7 @@ app.mount('#app');
 </template>
 
 <script setup>
-import { NotificationProvider } from 'fcm-rslib';
+import { NotificationProvider } from "fcm-rslib";
 </script>
 ```
 
@@ -54,7 +54,7 @@ import { NotificationProvider } from 'fcm-rslib';
 </template>
 
 <script setup>
-import { Notification } from 'fcm-rslib';
+import { Notification } from "fcm-rslib";
 </script>
 ```
 
@@ -62,7 +62,7 @@ import { Notification } from 'fcm-rslib';
 
 ```vue
 <script setup>
-import { useNotification } from 'fcm-rslib';
+import { useNotification } from "fcm-rslib";
 
 const { listNotification, initializeFCM } = useNotification();
 
@@ -87,5 +87,5 @@ Nếu gặp lỗi với Ant Design components, hãy đảm bảo:
 Đảm bảo đã import CSS:
 
 ```javascript
-import 'fcm-rslib/dist/index.css';
+import "fcm-rslib/dist/index.css";
 ```

@@ -46,7 +46,7 @@ interface Props {
 
 withDefaults(defineProps<Props>(), {
   size: 16,
-  className: '',
+  className: "",
 });
 </script>
 
@@ -55,4 +55,4 @@ svg {
   display: inline-block;
   vertical-align: middle;
 }
-</style> 
+</style>

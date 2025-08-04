@@ -1,8 +1,6 @@
-import { messaging, getToken, onMessage } from '../firebase';
-import { reactive, watch, ref } from 'vue';
-
-const vapidKey =
-  'BAnMUfFvWEf8QHCBIyHisHmMKp5PURUnn-6tFlM-5uJVZwjcRCnWkYRJuX8fL44imIRMFu3iFWwifc8jdcfAJ0U';
+import { reactive, ref, watch } from "vue";
+import { getConfig } from "../config";
+import { getToken, messaging, onMessage } from "../firebase";
 
 export interface FcmNotificationPayload {
   from: string;
@@ -17,31 +15,35 @@ export interface FcmNotificationPayload {
 }
 
 function getFromLocalStorage() {
-  const notifications = localStorage.getItem('fcm-notifications');
+  const config = getConfig();
+  const notifications = localStorage.getItem(
+    config.storageKey || "fcm-notifications"
+  );
   if (!notifications) return [];
   return JSON.parse(notifications);
 }
 
 const listNotification = reactive<FcmNotificationPayload[]>(
-  getFromLocalStorage() ?? [],
+  getFromLocalStorage() ?? []
 );
-// Tính toán count dựa trên số notification chưa đọc thực tế
+// Calculate count based on actual unread notifications
 const countReadAllNotification = ref(0);
 
 export const useNotification = () => {
   const requestPermissionAndGetToken = async () => {
     console.log("start request permission and get token...");
     try {
-      const token = await getToken(messaging, { vapidKey });
+      const config = getConfig();
+      const token = await getToken(messaging, { vapidKey: config.vapidKey });
       if (token) {
-        console.log('FCM Token:', token);
+        console.log("FCM Token:", token);
       } else {
         console.warn(
-          'No registration token available. Request permission to generate one.',
+          "No registration token available. Request permission to generate one."
         );
       }
     } catch (err) {
-      console.error('An error occurred while retrieving token. ', err);
+      console.error("An error occurred while retrieving token. ", err);
     }
   };
 
@@ -53,26 +55,30 @@ export const useNotification = () => {
         createdAt: new Date().toISOString(),
       });
       // Emit custom event
+      const config = getConfig();
       window.dispatchEvent(
-        new CustomEvent('fcm-notification', {
+        new CustomEvent(config.customEventName || "fcm-notification", {
           detail: payload,
-        }),
+        })
       );
       increaseCountReadAllNotification();
     });
   };
 
-  // Lắng nghe background messages từ service worker qua BroadcastChannel
+  // Listen to background messages from service worker via BroadcastChannel
   const listenToBackgroundMessages = () => {
-    if ('BroadcastChannel' in window) {
-      const channel = new BroadcastChannel('fcm-notifications');
+    if ("BroadcastChannel" in window) {
+      const config = getConfig();
+      const channel = new BroadcastChannel(
+        config.broadcastChannelName || "fcm-notifications"
+      );
 
       channel.onmessage = (event) => {
-        if (event.data && event.data.type === 'FCM_BACKGROUND_NOTIFICATION') {
+        if (event.data && event.data.type === "FCM_BACKGROUND_NOTIFICATION") {
           const notification = event.data.payload;
-          // Kiểm tra xem notification đã có trong list chưa
+          // Check if notification already exists in list
           const exists = listNotification.find(
-            (n) => n.messageId === notification.messageId,
+            (n) => n.messageId === notification.messageId
           );
           if (!exists) {
             listNotification.push({
@@ -81,27 +87,27 @@ export const useNotification = () => {
               createdAt: new Date().toISOString(),
             });
             console.log(
-              'Received background notification via BroadcastChannel:',
-              notification,
+              "Received background notification via BroadcastChannel:",
+              notification
             );
             increaseCountReadAllNotification();
           }
         }
       };
     } else {
-      // Fallback: sử dụng service worker message
-      if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.addEventListener('message', (event) => {
-          if (event.data && event.data.type === 'FCM_BACKGROUND_NOTIFICATION') {
+      // Fallback: use service worker message
+      if ("serviceWorker" in navigator) {
+        navigator.serviceWorker.addEventListener("message", (event) => {
+          if (event.data && event.data.type === "FCM_BACKGROUND_NOTIFICATION") {
             const notification = event.data.payload;
             const exists = listNotification.find(
-              (n) => n.messageId === notification.messageId,
+              (n) => n.messageId === notification.messageId
             );
             if (!exists) {
               listNotification.push(notification);
               console.log(
-                'Received background notification via postMessage:',
-                notification,
+                "Received background notification via postMessage:",
+                notification
               );
               increaseCountReadAllNotification();
             }
@@ -122,23 +128,32 @@ export const useNotification = () => {
 
   function readNotification(messageId: string) {
     const notification = listNotification.find(
-      (n) => n.messageId === messageId,
+      (n) => n.messageId === messageId
     );
     if (notification && !notification.isRead) {
       notification.isRead = true;
-      // Không giảm count khi đọc notification vì count đã được reset khi click chuông
-      console.log('Read notification:', messageId, 'Count remains:', countReadAllNotification.value);
+      // Don't decrease count when reading notification because count is reset when clicking bell
+      console.log(
+        "Read notification:",
+        messageId,
+        "Count remains:",
+        countReadAllNotification.value
+      );
     }
   }
 
   function saveToLocalStorage(notification: FcmNotificationPayload[]) {
-    localStorage.setItem('fcm-notifications', JSON.stringify(notification));
+    const config = getConfig();
+    localStorage.setItem(
+      config.storageKey || "fcm-notifications",
+      JSON.stringify(notification)
+    );
   }
 
   function saveCountReadAllNotification() {
     localStorage.setItem(
-      'countReadAllNotification',
-      countReadAllNotification.value.toString(),
+      "countReadAllNotification",
+      countReadAllNotification.value.toString()
     );
   }
 
@@ -148,10 +163,12 @@ export const useNotification = () => {
   }
 
   function removeNotification(messageId: string) {
-    const notificationIndex = listNotification.findIndex((n) => n.messageId === messageId);
+    const notificationIndex = listNotification.findIndex(
+      (n) => n.messageId === messageId
+    );
     if (notificationIndex !== -1) {
       listNotification.splice(notificationIndex, 1);
-      // Không giảm count khi xóa notification vì count đã được reset khi click chuông
+      // Don't decrease count when removing notification because count is reset when clicking bell
     }
   }
 
@@ -161,10 +178,8 @@ export const useNotification = () => {
     listNotification.splice(0, listNotification.length);
   }
 
-
-
   function increaseCountReadAllNotification() {
-    // Chỉ tăng count khi có notification mới
+    // Only increase count when there's a new notification
     countReadAllNotification.value = countReadAllNotification.value + 1;
     saveCountReadAllNotification();
   }

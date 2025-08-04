@@ -1,21 +1,22 @@
-import { defineConfig } from '@rslib/core';
-import { pluginUnpluginVue } from 'rsbuild-plugin-unplugin-vue';
+import { defineConfig } from "@rslib/core";
+import { pluginUnpluginVue } from "rsbuild-plugin-unplugin-vue";
 
 export default defineConfig({
   lib: [
     {
       bundle: true,
-      format: 'esm',
+      format: "esm",
+      dts: true,
     },
   ],
   output: {
-    target: 'web',
+    target: "web",
   },
   plugins: [pluginUnpluginVue()],
   tools: {
     bundlerChain: (chain) => {
       chain.externals({
-        vue: 'vue',
+        vue: "vue",
       });
     },
   },
