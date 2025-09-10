@@ -12,7 +12,7 @@ export default defineConfig({
   output: {
     target: "web",
   },
-  plugins: [pluginUnpluginVue()],
+  plugins: [pluginUnpluginVue() as never],
   tools: {
     bundlerChain: (chain) => {
       chain.externals({

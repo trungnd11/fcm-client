@@ -41,7 +41,7 @@ This will automatically:
 
 ```vue
 <script setup>
-import { useFcm } from "fcm-rslib";
+import { useFcm } from "@f88/fcm-notification";
 
 const { token, permission, requestPermission, onMessage } = useFcm();
 

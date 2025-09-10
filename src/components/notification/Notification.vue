@@ -1,44 +1,57 @@
 <script setup lang="ts">
-import { BellOutlined } from "@ant-design/icons-vue";
+import { BellOutlined, MoreOutlined } from "@ant-design/icons-vue";
 import {
   Badge,
-  Button,
   Divider,
+  Dropdown,
   List,
+  Menu,
+  Pagination,
   Popover,
   TypographyText,
   TypographyTitle,
 } from "ant-design-vue";
-import { computed, onMounted, ref, watchEffect } from "vue";
-import { useNotification } from "../../composables/useNotification";
-import TrashIcon from "../icons/TrashIcon.vue";
-import type { 
-  NotificationProps, 
+import { computed, onMounted, ref, watch } from "vue";
+import NotificationHeader from "./NotificationHeader.vue";
+import { FcmNotificationPayload, useNotification } from "../../composables/useNotification/useNotification";
+import useGetAllNotification from "../../composables/useGetAllNotification/useGetAllNotification";
+import type {
+  NotificationProps,
   NotificationEmits,
   BellSlotProps,
   HeaderSlotProps,
   ListSlotProps,
   EmptySlotProps,
-  FooterSlotProps
+  HeaderActionSlotProps,
+  PaginationSlotProps,
 } from "./types";
+import { PartnerCodeEnum } from "../../enums/PartnerCodeEnum";
+import { LanguageCodeEnum } from "../../enums/LanguageCodeEnum";
+import { ProjectCodeEnum } from "../../enums/ProjectCodeEnum";
+import { NotificationDataPayload } from "../../composables/useNotification/types";
 
 withDefaults(defineProps<NotificationProps>(), {
-  title: "Notifications",
-  emptyText: "No notifications",
-  clearAllText: "Clear all",
+  title: "Thông báo",
+  emptyText: "Không có thông báo",
+  clearAllText: "Xóa tất cả",
+  markAllAsReadText: "Đánh dấu tất cả đã đọc",
   showClearAll: true,
-  maxHeight: "400px",
+  showMarkAllAsRead: true,
+  maxHeight: "500px",
   width: "300px",
+  pageSize: 5,
+  showPagination: true,
 });
 
 const emit = defineEmits<NotificationEmits>();
 
-const slots = defineSlots<{
+defineSlots<{
   bell: (props: BellSlotProps) => any;
   header: (props: HeaderSlotProps) => any;
   list: (props: ListSlotProps) => any;
   empty: (props: EmptySlotProps) => any;
-  footer: (props: FooterSlotProps) => any;
+  headerAction: (props: HeaderActionSlotProps) => any;
+  pagination: (props: PaginationSlotProps) => any;
 }>();
 
 const {
@@ -47,12 +60,22 @@ const {
   requestPermissionAndGetToken,
   initializeFCM,
   resetCountReadAllNotification,
-  readNotification,
+  markAsReadNotification,
+  markAllAsReadNotification,
   removeNotification,
   clearAllNotification,
 } = useNotification();
 
+const {
+  isGetAllLoading,
+  paginatedNotifications,
+  setNotificationRequest,
+  fetchAllNotification,
+  fetchPaginatedNotifications,
+} = useGetAllNotification();
+
 const isBellShaking = ref(false);
+const currentPage = ref(1);
 
 const sortedListNotification = computed(() => {
   return [...listNotification].sort((a, b) => {
@@ -60,16 +83,10 @@ const sortedListNotification = computed(() => {
   });
 });
 
-let previousLength = listNotification.length;
-
-watchEffect(() => {
-  const currentLength = listNotification.length;
-
-  if (currentLength > previousLength) {
+watch(countReadAllNotification, (newCountReadAllNotification, oldCountReadAllNotification) => {
+  if (newCountReadAllNotification > oldCountReadAllNotification) {
     shakeBell();
   }
-
-  previousLength = currentLength;
 });
 
 function shakeBell() {
@@ -82,28 +99,42 @@ function shakeBell() {
 function getTimeAgo(createdAt: string) {
   const now = new Date();
   const created = new Date(createdAt);
-  const diffInMinutes = Math.floor(
-    (now.getTime() - created.getTime()) / (1000 * 60),
-  );
+  const diffInMinutes = Math.floor((now.getTime() - created.getTime()) / (1000 * 60));
 
-  if (diffInMinutes < 1) return "Just now";
-  if (diffInMinutes < 60) return `${diffInMinutes} minutes ago`;
+  if (diffInMinutes < 1) return "Vừa xong";
+  if (diffInMinutes < 60) return `${diffInMinutes} phút trước`;
 
   const diffInHours = Math.floor(diffInMinutes / 60);
-  if (diffInHours < 24) return `${diffInHours} hours ago`;
+  if (diffInHours < 24) return `${diffInHours} giờ trước`;
 
   const diffInDays = Math.floor(diffInHours / 24);
-  return `${diffInDays} days ago`;
+  return `${diffInDays} ngày trước`;
 }
 
 function handleBellClick() {
   resetCountReadAllNotification();
+  currentPage.value = 1;
+  setNotificationRequest({
+    PartnerCode: PartnerCodeEnum.MY_F88,
+    ProjectCode: ProjectCodeEnum.MY_F88_SYSTEM,
+    Language: LanguageCodeEnum.VI,
+    PageNumber: currentPage.value,
+    PageSize: 5,
+  });
+  fetchAllNotification();
+  fetchPaginatedNotifications();
   emit("bell-click");
 }
 
-function handleNotificationRead(messageId: string) {
-  readNotification(messageId);
-  emit("notification-read", messageId);
+function handleNotificationRead(item: FcmNotificationPayload<NotificationDataPayload>, action: "read" | "mark-read") {
+  if (!item.messageId) return;
+
+  if (item.data?.Link && action === "read") {
+    window.open(item.data.Link, "_blank");
+  }
+
+  markAsReadNotification(item.messageId);
+  emit("notification-read", item.messageId);
 }
 
 function handleNotificationRemove(messageId: string) {
@@ -114,6 +145,25 @@ function handleNotificationRemove(messageId: string) {
 function handleClearAll() {
   clearAllNotification();
   emit("clear-all");
+}
+
+function handleMarkAllAsRead() {
+  markAllAsReadNotification();
+  emit("mark-all-read");
+}
+
+function handlePageChange(page: number, size: number) {
+  currentPage.value = page;
+  setNotificationRequest({
+    PartnerCode: PartnerCodeEnum.MY_F88,
+    ProjectCode: ProjectCodeEnum.MY_F88_SYSTEM,
+    Language: LanguageCodeEnum.VI,
+    PageNumber: page,
+    PageSize: size,
+  });
+  fetchAllNotification();
+  fetchPaginatedNotifications();
+  emit("page-change", page, size);
 }
 
 onMounted(() => {
@@ -127,16 +177,11 @@ onMounted(() => {
     <Popover placement="bottomRight" trigger="click" :width="width">
       <!-- Bell slot with default fallback -->
       <template #default>
-        <slot
-          name="bell"
-          :count="countReadAllNotification"
-          :is-shaking="isBellShaking"
-          :on-click="handleBellClick"
-        >
+        <slot name="bell" :count="countReadAllNotification" :is-shaking="isBellShaking" :on-click="handleBellClick">
           <Badge :count="countReadAllNotification" :overflow-count="9">
             <BellOutlined
               :class="{ 'bell-shake': isBellShaking }"
-              :style="{ fontSize: '40px', cursor: 'pointer' }"
+              :style="{ fontSize: '24px', cursor: 'pointer' }"
               @click="handleBellClick"
             />
           </Badge>
@@ -145,78 +190,89 @@ onMounted(() => {
 
       <template #content>
         <div class="notification-wrapper">
-          <div class="notification-header">
-            <slot name="header" :title="title">
-              <TypographyTitle :level="4" class="notification-title">
-                {{ title }}
-              </TypographyTitle>
-            </slot>
-          </div>
+          <slot name="header" :title="title">
+            <NotificationHeader
+              :title="title"
+              :clear-all-text="clearAllText"
+              :mark-all-as-read-text="markAllAsReadText"
+              :sorted-list-notification="sortedListNotification"
+              @clear-all="handleClearAll"
+              @mark-all-as-read="handleMarkAllAsRead"
+            />
+          </slot>
           <Divider />
           <div class="notification-content" :style="{ maxHeight }">
             <!-- Notification list slot with default fallback -->
             <slot
               name="list"
-              :notifications="sortedListNotification"
+              :notifications="listNotification"
               :read-notification="handleNotificationRead"
               :remove-notification="handleNotificationRemove"
               :get-time-ago="getTimeAgo"
             >
-              <List
-                :dataSource="sortedListNotification"
-                :locale="{ emptyText: emptyText }"
-              >
+              <List :loading="isGetAllLoading" :dataSource="listNotification" :locale="{ emptyText: emptyText }">
                 <template #renderItem="{ item }">
-                  <div
-                    class="notification-item"
-                    @click="handleNotificationRead(item.messageId)"
-                  >
+                  <div class="notification-item" @click="handleNotificationRead(item, 'read')">
                     <div class="notification-item-content">
-                      <TypographyTitle :level="5">{{
-                        item.notification.title
-                      }}</TypographyTitle>
-                      <TypographyText>{{
-                        item.notification.body
-                      }}</TypographyText>
+                      <TypographyTitle :level="5">{{ item.notification.title }}</TypographyTitle>
+                      <TypographyText>{{ item.notification.body }}</TypographyText>
                     </div>
-                    <div class="notification-item-time">
-                      <TypographyText>{{
-                        getTimeAgo(item.createdAt)
-                      }}</TypographyText>
-                      <TrashIcon
-                        :size="16"
-                        className="trash-icon"
-                        :style="{
-                          cursor: 'pointer',
-                          color: 'red',
-                          display: 'none',
-                          position: 'absolute',
-                          right: '-24px',
-                          top: '50%',
-                          transform: 'translateY(-50%)',
-                        }"
-                        @click.stop="handleNotificationRemove(item.messageId)"
-                      />
+                    <div class="notification-item-action">
+                      <TypographyText>{{ getTimeAgo(item.createdAt) }}</TypographyText>
+                      <Dropdown :trigger="['click']" placement="bottomRight" class="notification-menu" @click.stop>
+                        <template #overlay>
+                          <Menu>
+                            <Menu.Item
+                              key="mark-read"
+                              :disabled="item.isRead"
+                              @click.stop="handleNotificationRead(item, 'mark-read')"
+                            >
+                              <span>Đánh dấu đã đọc</span>
+                            </Menu.Item>
+                            <Menu.Item key="delete" @click.stop="handleNotificationRemove(item.messageId)">
+                              <span class="text-red-500">Xóa</span>
+                            </Menu.Item>
+                          </Menu>
+                        </template>
+                        <MoreOutlined
+                          :style="{
+                            cursor: 'pointer',
+                            color: '#666',
+                            fontSize: '16px',
+                            padding: '4px',
+                          }"
+                          @click.stop
+                        />
+                      </Dropdown>
                     </div>
                     <div v-if="!item.isRead" class="notification-item-unread" />
                   </div>
                 </template>
               </List>
             </slot>
-          </div>
-          <div
-            v-if="showClearAll && sortedListNotification.length > 0"
-            class="notification-footer"
-          >
-            <slot
-              name="footer"
-              :clear-all="handleClearAll"
-              :text="clearAllText"
-            >
-              <Button type="link" @click.stop="handleClearAll">
-                {{ clearAllText }}
-              </Button>
-            </slot>
+
+            <Divider v-if="showMarkAllAsRead || showClearAll" />
+            <div v-if="sortedListNotification.length > 0" class="notification-footer">
+              <!-- Pagination -->
+              <slot
+                name="pagination"
+                :current-page="currentPage"
+                :page-size="pageSize"
+                :total="paginatedNotifications?.TotalRecords"
+                :on-change="handlePageChange"
+              >
+                <div v-if="showPagination" class="notification-pagination">
+                  <Pagination
+                    v-model:current="currentPage"
+                    size="small"
+                    show-less-items
+                    :page-size="pageSize"
+                    :total="paginatedNotifications?.TotalRecords"
+                    @change="handlePageChange"
+                  />
+                </div>
+              </slot>
+            </div>
           </div>
         </div>
       </template>
@@ -225,64 +281,54 @@ onMounted(() => {
 </template>
 
 <style scoped>
+@reference "tailwindcss";
+
 .notification-header {
-  padding: 16px;
+  @apply flex justify-between items-center p-4;
+}
+
+.notification-header-action {
+  @apply cursor-pointer;
+
+  &:hover {
+    @apply text-gray-500;
+  }
+}
+
+.header-action-buttons {
+  @apply flex flex-col gap-2;
 }
 
 .notification-content {
-  width: 500px;
-  overflow-y: auto;
+  @apply w-[500px] overflow-y-auto;
 }
 
 .notification-empty {
-  padding: 32px;
-  text-align: center;
-  color: #999;
+  @apply p-8 text-center text-gray-500;
 }
 
 .notification-item-unread {
-  width: 10px;
-  height: 10px;
-  background-color: green;
-  border-radius: 50%;
-  position: absolute;
-  top: 50%;
-  transform: translateY(-50%);
+  @apply w-2 h-2 bg-green-600 rounded-full absolute top-1/2 transform -translate-y-1/2;
 }
 
 .notification-item {
-  padding: 16px;
-  display: flex;
-  justify-content: space-between;
-  gap: 16px;
-  position: relative;
-  cursor: pointer;
+  @apply p-2 pl-4 flex justify-between gap-4 relative cursor-pointer;
 
   &:hover {
-    background-color: #f0f0f0;
-
-    .trash-icon {
-      display: block !important;
-    }
+    @apply bg-gray-100;
   }
 }
 
 .notification-item-content {
-  padding-left: 32px;
+  @apply pl-6;
 }
 
-.notification-item-time {
-  position: relative;
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  margin-right: 24px;
+.notification-item-action {
+  @apply relative flex items-center gap-4;
+}
 
-  &:hover {
-    .trash-icon {
-      display: block !important;
-    }
-  }
+.notification-menu {
+  @apply opacity-100;
 }
 
 .notification-title {
@@ -298,9 +344,27 @@ onMounted(() => {
 }
 
 .notification-footer {
-  display: flex;
-  justify-content: flex-end;
-  padding: 16px;
+  @apply flex items-center justify-center p-4;
+}
+
+.footer-buttons {
+  @apply flex justify-end gap-4;
+}
+
+.footer-buttons > .ant-btn {
+  @apply !p-0;
+}
+
+.notification-pagination {
+  @apply flex justify-end;
+}
+
+.notification-pagination > .ant-pagination.ant-pagination-mini {
+  @apply flex items-center justify-center gap-1;
+}
+
+.notification-pagination > .ant-pagination.ant-pagination-mini > li > button.ant-pagination-item-link {
+  @apply flex items-center justify-center;
 }
 
 .notification-content::-webkit-scrollbar-track {
@@ -317,14 +381,7 @@ onMounted(() => {
 .notification-content::-webkit-scrollbar-thumb {
   border-radius: 10px;
   background-color: #fff;
-  background-image: -webkit-gradient(
-    linear,
-    40% 0%,
-    75% 84%,
-    from(#4d9c41),
-    to(#19911d),
-    color-stop(0.6, #54de5d)
-  );
+  background-image: linear-gradient(40deg, #4d9c41 0%, #54de5d 60%, #19911d 100%);
 }
 
 @keyframes bellShake {

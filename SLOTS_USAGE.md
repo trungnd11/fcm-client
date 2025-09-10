@@ -21,11 +21,7 @@ Customize the bell icon and badge.
   <Notification>
     <template #bell="{ count, isShaking, onClick }">
       <!-- Custom bell implementation -->
-      <div
-        :class="{ 'custom-bell-shake': isShaking }"
-        @click="onClick"
-        class="custom-bell"
-      >
+      <div :class="{ 'custom-bell-shake': isShaking }" @click="onClick" class="custom-bell">
         <span class="notification-count">{{ count }}</span>
         🔔
       </div>
@@ -73,14 +69,7 @@ Customize the entire notification list.
 ```vue
 <template>
   <Notification>
-    <template
-      #list="{
-        notifications,
-        readNotification,
-        removeNotification,
-        getTimeAgo,
-      }"
-    >
+    <template #list="{ notifications, readNotification, removeNotification, getTimeAgo }">
       <div class="custom-notification-list">
         <div
           v-for="notification in notifications"
@@ -93,9 +82,7 @@ Customize the entire notification list.
             <p>{{ notification.notification.body }}</p>
             <small>{{ getTimeAgo(notification.createdAt) }}</small>
           </div>
-          <button @click.stop="removeNotification(notification.messageId)">
-            🗑️
-          </button>
+          <button @click.stop="removeNotification(notification.messageId)">🗑️</button>
           <div v-if="!notification.isRead" class="unread-indicator"></div>
         </div>
       </div>
@@ -185,11 +172,7 @@ You can also customize the component using props:
   >
     <!-- Custom bell -->
     <template #bell="{ count, isShaking, onClick }">
-      <div
-        :class="{ 'bell-animation': isShaking }"
-        @click="onClick"
-        class="custom-bell"
-      >
+      <div :class="{ 'bell-animation': isShaking }" @click="onClick" class="custom-bell">
         <span class="badge" v-if="count > 0">{{ count }}</span>
         <i class="fas fa-bell"></i>
       </div>
@@ -206,14 +189,7 @@ You can also customize the component using props:
     </template>
 
     <!-- Custom list -->
-    <template
-      #list="{
-        notifications,
-        readNotification,
-        removeNotification,
-        getTimeAgo,
-      }"
-    >
+    <template #list="{ notifications, readNotification, removeNotification, getTimeAgo }">
       <div class="custom-list">
         <div
           v-for="notification in notifications"
@@ -226,12 +202,7 @@ You can also customize the component using props:
             <p>{{ notification.notification.body }}</p>
             <time>{{ getTimeAgo(notification.createdAt) }}</time>
           </div>
-          <button
-            @click.stop="removeNotification(notification.messageId)"
-            class="remove-btn"
-          >
-            ×
-          </button>
+          <button @click.stop="removeNotification(notification.messageId)" class="remove-btn">×</button>
           <div v-if="!notification.isRead" class="unread-dot"></div>
         </div>
       </div>

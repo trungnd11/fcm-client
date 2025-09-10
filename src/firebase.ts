@@ -1,10 +1,5 @@
 import { initializeApp, FirebaseApp } from "firebase/app";
-import {
-  getMessaging,
-  getToken,
-  onMessage,
-  Messaging,
-} from "firebase/messaging";
+import { getMessaging, getToken, onMessage, Messaging } from "firebase/messaging";
 import { getConfig } from "./config";
 
 let app: FirebaseApp | undefined;
@@ -12,6 +7,8 @@ let messaging: Messaging | undefined;
 
 export const initializeFirebase = () => {
   const config = getConfig();
+
+  console.log("Initialize Firebase", config);
 
   if (!app) {
     app = initializeApp(config.firebase);

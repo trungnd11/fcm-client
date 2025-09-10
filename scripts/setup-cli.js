@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 
+// eslint-disable-next-line no-redeclare
 /* global process */
 
 import { execSync } from "node:child_process";
@@ -13,9 +14,7 @@ try {
   const cliScript = join(process.cwd(), "scripts", "cli.js");
 
   if (!existsSync(cliScript)) {
-    console.error(
-      "❌ CLI script not found. Please run this from the project root."
-    );
+    console.error("❌ CLI script not found. Please run this from the project root.");
     process.exit(1);
   }
 
@@ -24,7 +23,7 @@ try {
   console.log("✅ Made CLI script executable");
 
   // Create symlink or copy to make it globally accessible
-  const globalBin = join(process.cwd(), "node_modules", ".bin", "fcm-rslib");
+  const globalBin = join(process.cwd(), "node_modules", ".bin", "fcm-notification");
 
   try {
     // Try to create symlink
@@ -39,10 +38,10 @@ try {
 
   console.log("\n🎉 FCM RSLib CLI setup completed!");
   console.log("\n📖 Usage:");
-  console.log("   npx fcm-rslib setup");
-  console.log("   npx fcm-rslib generate");
-  console.log("   npx fcm-rslib validate");
-  console.log("   npx fcm-rslib help");
+  console.log("   npx fcm-notification setup");
+  console.log("   npx fcm-notification generate");
+  console.log("   npx fcm-notification validate");
+  console.log("   npx fcm-notification help");
 } catch (error) {
   console.error("❌ Setup failed:", error.message);
   process.exit(1);
