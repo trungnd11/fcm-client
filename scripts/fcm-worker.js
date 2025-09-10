@@ -34,9 +34,9 @@ messaging.onBackgroundMessage(function (payload) {
     payload,
   );
   
-  const notificationTitle = payload.notification?.title || 'New Message';
+  const notificationTitle = payload.notification?.Content || 'New Message';
   const notificationOptions = {
-    body: payload.notification?.body || 'You have a new message',
+    body: payload.notification?.Details || 'You have a new message',
     icon: 'https://static-dev.baohiemngoinhaxanh.vn/pub/isr/2025/7/1753411741_nnx-logo.png',
     badge: 'https://static-dev.baohiemngoinhaxanh.vn/pub/isr/2025/7/1753411741_nnx-logo.png',
     image: 'https://static-dev.baohiemngoinhaxanh.vn/pub/isr/2025/7/1753411741_nnx-logo.png',
