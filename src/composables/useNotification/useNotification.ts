@@ -8,7 +8,6 @@ import useMarkAllAsReadNotification from "../useMarkAllAsReadNotification/useMar
 import useDeleteNotification from "../useDeleteNotification/useDeleteNotification";
 import useDeleteAllNotification from "../useDeleteAllNotification/useDeleteAllNotification";
 import { Messaging } from "firebase/messaging";
-import { isEmptyArray } from "../../utils/arrayUtil";
 import { getConfig } from "../../config";
 import { PartnerCodeEnum } from "../../enums/PartnerCodeEnum";
 import { FcmNotificationPayload, NotificationDataPayload, UseNotificationProps } from "./types";
@@ -27,10 +26,10 @@ export const useNotification = (props?: UseNotificationProps) => {
   const { fetchDeleteAllNotification } = useDeleteAllNotification();
 
   watch(notifications, (newNotifications) => {
-    if (!isEmptyArray(listNotification)) {
-      listNotification.splice(0, listNotification.length);
-    }
     newNotifications.forEach((notification) => {
+      const isExist = listNotification.find((n) => n.messageId === notification.Id);
+      if (isExist) return;
+
       listNotification.push({
         messageId: notification.Id,
         isRead: notification.IsReaded,
@@ -40,6 +39,7 @@ export const useNotification = (props?: UseNotificationProps) => {
         notification: {
           title: notification.Content,
           body: notification.Details,
+          image: notification.Icon ?? undefined,
         },
         data: notification as unknown as NotificationDataPayload,
       });
@@ -54,13 +54,15 @@ export const useNotification = (props?: UseNotificationProps) => {
     try {
       const config = getConfig();
 
+      console.log("getConfig", config);
+
       const { messaging } = initializeFirebase(config);
       if (!messaging.value) return;
 
       messagingFirebase.value = messaging.value;
       const token = await getToken(messaging.value, { vapidKey: config.vapidKey });
       if (token) {
-        console.log(token);
+        console.log("fcmToken", token);
         await fetchRegisterNotification({
           FCMToken: token,
           PartnerCode: PartnerCodeEnum.MY_F88,
@@ -135,14 +137,26 @@ export const useNotification = (props?: UseNotificationProps) => {
     const notification = listNotification.find((n) => n.messageId === messageId);
     if (!notification) return;
 
-    await fetchMarkAsReadNotification({
-      Id: messageId,
-      PartnerCode: PartnerCodeEnum.MY_F88,
-    });
+    await fetchMarkAsReadNotification(
+      {
+        Id: messageId,
+        PartnerCode: PartnerCodeEnum.MY_F88,
+      },
+      () => {
+        const index = listNotification.findIndex((n) => n.messageId === messageId);
+        if (index !== -1) {
+          listNotification[index].isRead = true;
+        }
+      }
+    );
   }
 
   async function markAllAsReadNotification() {
-    await fetchMarkAllAsReadNotification();
+    await fetchMarkAllAsReadNotification(() => {
+      listNotification.forEach((n) => {
+        n.isRead = true;
+      });
+    });
   }
 
   function resetCountReadAllNotification() {
@@ -152,10 +166,18 @@ export const useNotification = (props?: UseNotificationProps) => {
   function removeNotification(messageId: string) {
     const item = listNotification.find((n) => n.messageId === messageId);
     if (!item) return;
-    fetchDeleteNotification({
-      Id: messageId,
-      PartnerCode: PartnerCodeEnum.MY_F88,
-    });
+    fetchDeleteNotification(
+      {
+        Id: messageId,
+        PartnerCode: PartnerCodeEnum.MY_F88,
+      },
+      () => {
+        const index = listNotification.findIndex((n) => n.messageId === messageId);
+        if (index !== -1) {
+          listNotification.splice(index, 1);
+        }
+      }
+    );
   }
 
   function clearAllNotification() {

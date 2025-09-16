@@ -20,7 +20,7 @@ export interface ListSlotProps {
   notifications: FcmNotificationPayload[];
   readNotification: (item: FcmNotificationPayload<NotificationDataPayload>, action: "read" | "mark-read") => void;
   removeNotification: (messageId: string) => void;
-  getTimeAgo: (createdAt: string) => string;
+  getTimeAgo?: (createdAt: string) => string;
 }
 
 export interface EmptySlotProps {

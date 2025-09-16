@@ -21,5 +21,8 @@
     "noUnusedLocals": true,
     "noUnusedParameters": true
   },
+  "vueCompilerOptions": {
+    "strictTemplates": true
+  },
   "include": ["src", "public/firebase-messaging-sw.js"]
 }
