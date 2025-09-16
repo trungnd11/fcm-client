@@ -1,5 +1,6 @@
-import { reactive, ref, watch, onMounted } from "vue";
-import { notification } from "ant-design-vue";
+import { reactive, ref, watch, onMounted, h } from "vue";
+import { notification as antdNotification } from "ant-design-vue";
+import { NotificationTwoTone } from "@ant-design/icons-vue";
 import useRegisterNotification from "../useRegisterNotification/useRegisterNotification";
 import useGetAllNotification from "../useGetAllNotification/useGetAllNotification";
 import useInitializeFirebase from "../useInitializeFirebase/useInitializeFirebase";
@@ -68,7 +69,7 @@ export const useNotification = (props?: UseNotificationProps) => {
           PartnerCode: PartnerCodeEnum.MY_F88,
         });
       } else {
-        notification.error({
+        antdNotification.error({
           message: "No registration token available. Request permission to generate one.",
         });
       }
@@ -84,6 +85,11 @@ export const useNotification = (props?: UseNotificationProps) => {
       const { data, ...rest } = payload;
       console.log("Received message", data, rest);
       fetchDefaultNotification();
+      antdNotification.open({
+        message: rest.notification?.title ?? data?.Content,
+        description: rest.notification?.body ?? data?.Detail,
+        icon: rest.notification?.icon ?? data?.Icon ?? h(NotificationTwoTone),
+      });
       // Emit custom event
       const config = getConfig();
       window.dispatchEvent(

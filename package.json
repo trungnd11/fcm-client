@@ -19,8 +19,8 @@
   },
   "types": "./dist/index.d.ts",
   "scripts": {
-    "build": "rslib build && vue-tsc --declaration --emitDeclarationOnly --outDir dist",
-    "build:watch": "concurrently \"rslib build --watch\" \"vue-tsc --watch --declaration --emitDeclarationOnly --outDir dist\"",
+    "build": "cross-env BUILD_LIB=true rslib build && vue-tsc --declaration --emitDeclarationOnly --outDir dist",
+    "build:watch": "concurrently \"cross-env BUILD_LIB=true rslib build --watch\" \"vue-tsc --watch --declaration --emitDeclarationOnly --outDir dist\"",
     "build:storybook": "storybook build",
     "check": "biome check --write",
     "dev": "rslib build --watch",

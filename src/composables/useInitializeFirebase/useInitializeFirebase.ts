@@ -34,6 +34,7 @@ export default function useInitializeFirebase() {
     if (messagesRef) {
       onValue(messagesRef, (snapshot) => {
         if (snapshot.exists()) {
+          console.log("snapshot exists", snapshot.val()?.[username.value]?.count);
           messageCount.value = snapshot.val()?.[username.value]?.count ?? 0;
         }
       });

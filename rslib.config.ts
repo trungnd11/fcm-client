@@ -7,6 +7,9 @@ export default defineConfig({
       bundle: true,
       format: "esm",
       dts: true,
+      output: {
+        injectStyles: true,
+      },
     },
   ],
   output: {
@@ -15,9 +18,11 @@ export default defineConfig({
   plugins: [pluginUnpluginVue() as never],
   tools: {
     bundlerChain: (chain) => {
-      chain.externals({
-        vue: "vue",
-      });
+      if (process.env.BUILD_LIB) {
+        chain.externals({
+          vue: "vue",
+        });
+      }
     },
   },
 });

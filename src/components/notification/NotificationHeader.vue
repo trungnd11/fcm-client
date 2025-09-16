@@ -47,7 +47,7 @@ function handleMarkAllAsRead() {
       </TypographyTitle>
     </slot>
     <div class="notification-header-action">
-      <Dropdown :trigger="['hover']" placement="bottomRight" @click.stop>
+      <Dropdown :trigger="['hover']" placement="bottomRight">
         <template #overlay>
           <div class="header-action-buttons">
             <Menu>
